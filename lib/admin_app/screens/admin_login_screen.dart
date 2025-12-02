@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'admin_home_screen.dart';
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
 
@@ -184,7 +184,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                   ? null
                                   : () {
                                 if (_formKey.currentState!.validate()) {
-                                  print("ADMIN LOGIN PRESSED");
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const AdminHomeDashboard(),
+                                    ),
+                                  );
                                 }
                               },
 
