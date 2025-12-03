@@ -72,9 +72,17 @@ class AdminReportsScreen extends StatelessWidget {
         backgroundColor: background,
         elevation: 0,
         centerTitle: true,
-        title: Text("Reports", style: TextStyle(color: navy, fontWeight: FontWeight.bold)),
-        iconTheme: IconThemeData(color: navy),
+        title: Text(
+          "Report Management",
+          style: TextStyle(color: navy, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          color: navy,
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.count(

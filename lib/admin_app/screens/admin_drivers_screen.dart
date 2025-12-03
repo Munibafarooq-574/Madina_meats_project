@@ -8,138 +8,135 @@ class AdminDriversScreen extends StatefulWidget {
 }
 
 class _AdminDriversScreenState extends State<AdminDriversScreen> {
-  final Color navy = const Color(0xFF344955);
+  final Color navy = const Color(0xFF2C3E50);
   final Color gold = const Color(0xFFD4AF37);
-  final Color background = const Color(0xFFF8F5E8);
+  final Color extraGold = const Color(0xFFEEDC82);
 
-  List<Map<String, String>> drivers = [
+  TextEditingController searchCtrl = TextEditingController();
+
+  List<Map<String, dynamic>> drivers = [
     {
       "name": "Ali Raza",
       "email": "ali@gmail.com",
+      "password": "123456",
       "phone": "03001234567",
-      "password": "12345",
     },
     {
       "name": "Hamza Khan",
       "email": "hamza@gmail.com",
-      "phone": "03017654321",
       "password": "driver123",
+      "phone": "03017654321",
     },
   ];
 
-  // ADD + EDIT POPUP
-  void _showDriverDialog({Map<String, String>? driver, int? index}) {
-    TextEditingController nameCtrl =
-    TextEditingController(text: driver?["name"] ?? "");
-    TextEditingController emailCtrl =
-    TextEditingController(text: driver?["email"] ?? "");
-    TextEditingController phoneCtrl =
-    TextEditingController(text: driver?["phone"] ?? "");
-    TextEditingController passCtrl =
-    TextEditingController(text: driver?["password"] ?? "");
+  List<Map<String, dynamic>> filtered = [];
 
-    bool isEdit = driver != null;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: background,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: BorderSide(color: gold, width: 2),
-          ),
-          title: Text(
-            isEdit ? "Update Driver" : "Add Driver",
-            style: TextStyle(
-              color: navy,
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildField("Driver Name", nameCtrl),
-              const SizedBox(height: 10),
-              _buildField("Email", emailCtrl),
-              const SizedBox(height: 10),
-              _buildField("Phone Number", phoneCtrl),
-              const SizedBox(height: 10),
-              _buildField("Password", passCtrl),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text("Cancel", style: TextStyle(color: navy)),
-              onPressed: () => Navigator.pop(context),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: gold,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () {
-                if (isEdit) {
-                  setState(() {
-                    drivers[index!] = {
-                      "name": nameCtrl.text,
-                      "email": emailCtrl.text,
-                      "phone": phoneCtrl.text,
-                      "password": passCtrl.text,
-                    };
-                  });
-                } else {
-                  setState(() {
-                    drivers.add({
-                      "name": nameCtrl.text,
-                      "email": emailCtrl.text,
-                      "phone": phoneCtrl.text,
-                      "password": passCtrl.text,
-                    });
-                  });
-                }
-                Navigator.pop(context);
-              },
-              child: Text(isEdit ? "Update" : "Add"),
-            ),
-          ],
-        );
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    filtered = List.from(drivers);
+    searchCtrl.addListener(filterData);
   }
 
-  // DELETE POPUP
-  void _deleteDriver(int index) {
+  void filterData() {
+    String q = searchCtrl.text.toLowerCase();
+
+    setState(() {
+      filtered = drivers.where((d) {
+        return d["name"].toLowerCase().contains(q) ||
+            d["email"].toLowerCase().contains(q) ||
+            d["phone"].toLowerCase().contains(q) ||
+            d["password"].toLowerCase().contains(q);
+      }).toList();
+    });
+  }
+
+  // ----------------------------------------------------------
+  // ADD / EDIT DRIVER DIALOG
+  // ----------------------------------------------------------
+  void openDriverDialog({Map<String, dynamic>? data, int? index}) {
+    TextEditingController nameC = TextEditingController(text: data?["name"]);
+    TextEditingController emailC = TextEditingController(text: data?["email"]);
+    TextEditingController pwdC =
+    TextEditingController(text: data?["password"]);
+    TextEditingController phoneC = TextEditingController(text: data?["phone"]);
+
+    ValueNotifier<bool> isValid = ValueNotifier(false);
+
+    void validate() {
+      isValid.value = nameC.text.isNotEmpty &&
+          emailC.text.isNotEmpty &&
+          pwdC.text.isNotEmpty &&
+          phoneC.text.isNotEmpty;
+    }
+
+    nameC.addListener(validate);
+    emailC.addListener(validate);
+    pwdC.addListener(validate);
+    phoneC.addListener(validate);
+    validate();
+
     showDialog(
       context: context,
-      builder: (ctx) {
+      builder: (_) {
         return AlertDialog(
-          backgroundColor: background,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-              side: BorderSide(color: gold)),
+          backgroundColor: Colors.white,
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
-            "Delete Driver?",
+            data == null ? "Add Driver" : "Edit Driver",
             style: TextStyle(color: navy, fontWeight: FontWeight.bold),
           ),
-          content: const Text("This action cannot be undone."),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                textField("Driver Name", nameC),
+                const SizedBox(height: 10),
+                textField("Email", emailC),
+                const SizedBox(height: 10),
+                textField("Password", pwdC),
+                const SizedBox(height: 10),
+                textField("Phone Number", phoneC),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
-              child: Text("Cancel", style: TextStyle(color: navy)),
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white),
-              onPressed: () {
-                setState(() => drivers.removeAt(index));
-                Navigator.pop(ctx);
+            ValueListenableBuilder(
+              valueListenable: isValid,
+              builder: (_, valid, __) {
+                return ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: valid ? navy : Colors.grey,
+                      foregroundColor: Colors.white),
+                  onPressed: valid
+                      ? () {
+                    if (data == null) {
+                      drivers.add({
+                        "name": nameC.text,
+                        "email": emailC.text,
+                        "password": pwdC.text,
+                        "phone": phoneC.text,
+                      });
+                    } else {
+                      drivers[index!] = {
+                        "name": nameC.text,
+                        "email": emailC.text,
+                        "password": pwdC.text,
+                        "phone": phoneC.text,
+                      };
+                    }
+
+                    filterData();
+                    Navigator.pop(context);
+                  }
+                      : null,
+                  child: const Text("Save"),
+                );
               },
-              child: const Text("Delete"),
             ),
           ],
         );
@@ -147,135 +144,229 @@ class _AdminDriversScreenState extends State<AdminDriversScreen> {
     );
   }
 
-  // CUSTOM FIELD
-  Widget _buildField(String label, TextEditingController ctrl) {
+  // ----------------------------------------------------------
+  // DELETE DRIVER
+  // ----------------------------------------------------------
+  void confirmDelete(int index) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Driver"),
+        content: const Text("Are you sure you want to delete this driver?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF344955),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              drivers.removeAt(index);
+              filterData();
+              Navigator.pop(context);
+            },
+            child: const Text(
+              "Delete",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ----------------------------------------------------------
+  // CUSTOM TEXT FIELD WIDGET
+  // ----------------------------------------------------------
+  Widget textField(String label, TextEditingController c) {
     return TextField(
-      controller: ctrl,
+      controller: c,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: navy),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: gold, width: 2),
-          borderRadius: BorderRadius.circular(14),
-        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: gold),
         ),
       ),
     );
   }
 
-  // UI
+  Widget textRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            "$title: ",
+            style: TextStyle(fontWeight: FontWeight.bold, color: navy),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  // ----------------------------------------------------------
+  // MAIN UI
+  // ----------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: const Color(0xFFF4EFE6),
 
-      // ⭐ NEW APPBAR WITH SAME BACK BUTTON STYLE
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-
+        backgroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: navy, size: 26),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-
         title: Text(
-          "Drivers Management",
-          style: TextStyle(
-            color: navy,
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-          ),
+          "Driver Management",
+          style: TextStyle(color: navy, fontWeight: FontWeight.bold),
         ),
       ),
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: gold,
-        child: Icon(Icons.add, color: navy),
-        onPressed: () => _showDriverDialog(),
-      ),
-
-      // ⭐ REMOVED OLD CUSTOM BACK BUTTON ROW
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: drivers.length,
-        itemBuilder: (context, index) {
-          final d = drivers[index];
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 18),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: gold, width: 1.4),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12.withOpacity(0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-
-            child: Row(
-              children: [
-                // ICON
-                Container(
-                  height: 55,
-                  width: 55,
-                  decoration: BoxDecoration(
-                    color: gold.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(14),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ---------------------------------------
+          // NEW "ADD DRIVER" BUTTON (Create Order Style)
+          // ---------------------------------------
+          Padding(
+            padding: const EdgeInsets.only(top: 10, right: 16),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD6C28F),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.person, color: navy, size: 30),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 12),
                 ),
+                icon: const Icon(Icons.add),
+                label: const Text(
+                  "Add Driver",
+                  style:
+                  TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => openDriverDialog(),
+              ),
+            ),
+          ),
 
-                const SizedBox(width: 15),
+          // SEARCH BAR
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: searchCtrl,
+              decoration: InputDecoration(
+                hintText: "Search drivers...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
 
-                // TEXT INFO
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        d["name"]!,
-                        style: TextStyle(
-                          fontSize: 21,
-                          color: navy,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text("Email: ${d['email']}"),
-                      Text("Phone: ${d['phone']}"),
-                      Text("Password: ${d['password']}"),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: filtered.length,
+              itemBuilder: (_, index) {
+                var d = filtered[index];
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    color: Colors.white,
+                    border: Border.all(color: gold, width: 1.3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      )
                     ],
                   ),
-                ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 20),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(22)),
+                          gradient: LinearGradient(
+                            colors: [
+                              extraGold.withOpacity(0.5),
+                              Colors.white
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.person, color: navy, size: 28),
+                            const SizedBox(width: 12),
+                            Text(
+                              d["name"],
+                              style: TextStyle(
+                                color: navy,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                // ACTION BUTTONS
-                Column(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.edit, color: navy, size: 26),
-                      onPressed: () =>
-                          _showDriverDialog(driver: d, index: index),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete,
-                          color: Colors.red, size: 26),
-                      onPressed: () => _deleteDriver(index),
-                    ),
-                  ],
-                ),
-              ],
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            textRow("Email", d["email"]),
+                            textRow("Password", d["password"]),
+                            textRow("Phone", d["phone"]),
+                          ],
+                        ),
+                      ),
+
+                      Divider(color: gold),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit, color: navy),
+                            onPressed: () =>
+                                openDriverDialog(data: d, index: index),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => confirmDelete(index),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

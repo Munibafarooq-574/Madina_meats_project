@@ -8,271 +8,370 @@ class AdminCustomersScreen extends StatefulWidget {
 }
 
 class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
-  // THEME COLORS
-  final Color navy = const Color(0xFF344955);
-  final Color gold = const Color(0xFFD6C28F);
-  final Color extraGold = const Color(0xFFE8D3A2);
-  final Color background = const Color(0xFFF8F5E8);
+  final Color navy = const Color(0xFF2C3E50);
+  final Color gold = const Color(0xFFD4AF37);
+  final Color extraGold = const Color(0xFFEEDC82);
 
-  // Dummy Customer List
+  TextEditingController searchCtrl = TextEditingController();
+
   List<Map<String, dynamic>> customers = [
     {
       "name": "Ali Raza",
       "email": "ali@gmail.com",
-      "password": "12345",
+      "password": "123456",
       "contact": "03001234567",
-      "address": "Lahore"
+      "address": "Lahore, Pakistan"
     },
     {
-      "name": "Hina Khan",
-      "email": "hina@gmail.com",
+      "name": "Muniba",
+      "email": "muniba@gmail.com",
       "password": "abcd",
-      "contact": "03007654321",
-      "address": "Islamabad"
-    }
+      "contact": "03111234567",
+      "address": "Karachi, Pakistan"
+    },
   ];
 
-  // Text Controllers
-  final TextEditingController _name = TextEditingController();
-  final TextEditingController _email = TextEditingController();
-  final TextEditingController _password = TextEditingController();
-  final TextEditingController _contact = TextEditingController();
-  final TextEditingController _address = TextEditingController();
+  List<Map<String, dynamic>> filtered = [];
 
-  // Open Add / Edit Dialog
+  @override
+  void initState() {
+    super.initState();
+    filtered = List.from(customers);
+    searchCtrl.addListener(filterData);
+  }
+
+  void filterData() {
+    String q = searchCtrl.text.toLowerCase();
+
+    setState(() {
+      filtered = customers.where((c) {
+        return c["name"].toLowerCase().contains(q) ||
+            c["email"].toLowerCase().contains(q) ||
+            c["contact"].toLowerCase().contains(q) ||
+            c["address"].toLowerCase().contains(q);
+      }).toList();
+    });
+  }
+
+  // ---------------- ADD / EDIT CUSTOMER ----------------
   void openCustomerDialog({Map<String, dynamic>? data, int? index}) {
-    bool isEdit = data != null;
+    TextEditingController nameC = TextEditingController(text: data?["name"]);
+    TextEditingController emailC =
+    TextEditingController(text: data?["email"]);
+    TextEditingController pwdC =
+    TextEditingController(text: data?["password"]);
+    TextEditingController contactC =
+    TextEditingController(text: data?["contact"]);
+    TextEditingController addressC =
+    TextEditingController(text: data?["address"]);
 
-    if (isEdit) {
-      _name.text = data["name"];
-      _email.text = data["email"];
-      _password.text = data["password"];
-      _contact.text = data["contact"];
-      _address.text = data["address"];
-    } else {
-      _name.clear();
-      _email.clear();
-      _password.clear();
-      _contact.clear();
-      _address.clear();
+    ValueNotifier<bool> isValid = ValueNotifier(false);
+
+    void validate() {
+      isValid.value = nameC.text.isNotEmpty &&
+          emailC.text.isNotEmpty &&
+          pwdC.text.isNotEmpty &&
+          contactC.text.isNotEmpty &&
+          addressC.text.isNotEmpty;
     }
+
+    nameC.addListener(validate);
+    emailC.addListener(validate);
+    pwdC.addListener(validate);
+    contactC.addListener(validate);
+    addressC.addListener(validate);
+    validate();
 
     showDialog(
       context: context,
-      builder: (context) {
-        return Dialog(
+      builder: (_) {
+        return AlertDialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            data == null ? "Add Customer" : "Edit Customer",
+            style: TextStyle(color: navy, fontWeight: FontWeight.bold),
           ),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: gold, width: 2),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Text(
-                    isEdit ? "Update Customer" : "Add Customer",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: navy,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // FORM FIELDS
-                  customField("Full Name", _name),
-                  customField("Email", _email),
-                  customField("Password", _password, obscure: true),
-                  customField("Contact Number", _contact),
-                  customField("Address", _address),
-
-                  const SizedBox(height: 25),
-
-                  // SAVE BUTTON
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_name.text.isEmpty ||
-                          _email.text.isEmpty ||
-                          _password.text.isEmpty ||
-                          _contact.text.isEmpty ||
-                          _address.text.isEmpty) {
-                        return;
-                      }
-
-                      if (isEdit) {
-                        customers[index!] = {
-                          "name": _name.text,
-                          "email": _email.text,
-                          "password": _password.text,
-                          "contact": _contact.text,
-                          "address": _address.text,
-                        };
-                      } else {
-                        customers.add({
-                          "name": _name.text,
-                          "email": _email.text,
-                          "password": _password.text,
-                          "contact": _contact.text,
-                          "address": _address.text,
-                        });
-                      }
-
-                      setState(() {});
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: gold,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 50,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(color: navy, width: 2),
-                      ),
-                    ),
-                    child: Text(
-                      isEdit ? "Update" : "Add",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                textField("Full Name", nameC),
+                const SizedBox(height: 10),
+                textField("Email", emailC),
+                const SizedBox(height: 10),
+                textField("Password", pwdC),
+                const SizedBox(height: 10),
+                textField("Contact No.", contactC),
+                const SizedBox(height: 10),
+                textField("Address", addressC),
+              ],
             ),
           ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: isValid,
+              builder: (context, valid, _) {
+                return ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: valid ? navy : Colors.grey,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: valid
+                      ? () {
+                    if (data == null) {
+                      customers.add({
+                        "name": nameC.text,
+                        "email": emailC.text,
+                        "password": pwdC.text,
+                        "contact": contactC.text,
+                        "address": addressC.text,
+                      });
+                    } else {
+                      customers[index!] = {
+                        "name": nameC.text,
+                        "email": emailC.text,
+                        "password": pwdC.text,
+                        "contact": contactC.text,
+                        "address": addressC.text,
+                      };
+                    }
+
+                    filterData();
+                    Navigator.pop(context);
+                  }
+                      : null,
+                  child: const Text("Save"),
+                );
+              },
+            ),
+          ],
         );
       },
     );
   }
 
-  // Custom TextField UI
-  Widget customField(String label, TextEditingController controller,
-      {bool obscure = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: navy),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: gold, width: 2),
-            borderRadius: BorderRadius.circular(14),
+  // ---------------- DELETE ----------------
+  void confirmDelete(int index) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Customer"),
+        content: const Text("Are you sure you want to delete this customer?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancel"),
+            onPressed: () => Navigator.pop(context),
           ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF344955),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              customers.removeAt(index);
+              filterData();
+              Navigator.pop(context);
+            },
+            child: const Text("Delete"),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget textField(String label, TextEditingController c) {
+    return TextField(
+      controller: c,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: gold),
         ),
       ),
     );
   }
 
+  Widget textRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            "$title: ",
+            style: TextStyle(fontWeight: FontWeight.bold, color: navy),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: const Color(0xFFF4EFE6),
 
-      // APP BAR
       appBar: AppBar(
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [background, extraGold.withOpacity(0.3)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Customers",
+          "Customer Management",
           style: TextStyle(color: navy, fontWeight: FontWeight.bold),
         ),
-        iconTheme: IconThemeData(color: navy),
       ),
 
-      // BODY
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: customers.length,
-        itemBuilder: (context, index) {
-          final c = customers[index];
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: gold, width: 1.4),
-              boxShadow: [
-                BoxShadow(
-                  color: navy.withOpacity(0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                )
-              ],
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(18),
-              title: Text(
-                c["name"],
-                style: TextStyle(
-                  color: navy,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Text(
-                "Email: ${c["email"]}\nContact: ${c["contact"]}\nAddress: ${c["address"]}",
-                style: TextStyle(color: navy.withOpacity(0.8)),
-              ),
-
-              // ACTION BUTTONS
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // EDIT
-                  IconButton(
-                    icon: Icon(Icons.edit, color: gold),
-                    onPressed: () {
-                      openCustomerDialog(data: c, index: index);
-                    },
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ---------------- TOP CREATE BUTTON ----------------
+          Padding(
+            padding: const EdgeInsets.only(top: 10, right: 16),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD6C28F),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-
-                  // DELETE
-                  IconButton(
-                    icon: Icon(Icons.delete_forever, color: Colors.red),
-                    onPressed: () {
-                      customers.removeAt(index);
-                      setState(() {});
-                    },
-                  )
-                ],
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 12),
+                ),
+                icon: const Icon(Icons.add),
+                label: const Text(
+                  "Add Customer",
+                  style:
+                  TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => openCustomerDialog(),
               ),
             ),
-          );
-        },
-      ),
+          ),
 
-      // ADD BUTTON
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: gold,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(100),
-          side: BorderSide(color: navy, width: 2),
-        ),
-        onPressed: () => openCustomerDialog(),
-        child: Icon(Icons.add, color: navy, size: 28),
+          // SEARCH BAR
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: searchCtrl,
+              decoration: InputDecoration(
+                hintText: "Search customers...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: filtered.length,
+              itemBuilder: (_, index) {
+                var c = filtered[index];
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    color: Colors.white,
+                    border: Border.all(color: gold, width: 1.3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // HEADER
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 20),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(22)),
+                          gradient: LinearGradient(
+                            colors: [
+                              extraGold.withOpacity(0.5),
+                              Colors.white
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.person, color: navy, size: 28),
+                            const SizedBox(width: 12),
+                            Text(
+                              c["name"],
+                              style: TextStyle(
+                                color: navy,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // DETAILS
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            textRow("Email", c["email"]),
+                            textRow("Password", c["password"]),
+                            textRow("Contact", c["contact"]),
+                            textRow("Address", c["address"]),
+                          ],
+                        ),
+                      ),
+
+                      Divider(color: gold),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit, color: navy, size: 26),
+                            onPressed: () =>
+                                openCustomerDialog(data: c, index: index),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete,
+                                color: Colors.red, size: 26),
+                            onPressed: () => confirmDelete(index),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

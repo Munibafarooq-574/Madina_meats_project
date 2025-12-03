@@ -1,12 +1,11 @@
 // lib/admin_ante_mortem_form.dart
+
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 
 class AdminAnteMortemForm extends StatefulWidget {
   const AdminAnteMortemForm({super.key});
@@ -21,21 +20,22 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
   final Color background = const Color(0xFFF8F5E8);
 
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
 
-  // Form controllers
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
+
+  // TEXT FIELD CONTROLLERS
   final TextEditingController _owner = TextEditingController();
-  String _meatType = "Beef";
   final TextEditingController _inspector = TextEditingController();
 
-  // Signature controller from package
+  String _meatType = "Beef";
+
   final SignatureController _signatureController = SignatureController(
     penStrokeWidth: 2,
     penColor: Colors.black,
   );
 
-  // Local storage of saved entries (in-memory for now)
   final List<Map<String, dynamic>> _savedEntries = [];
 
   @override
@@ -43,7 +43,69 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
     _owner.dispose();
     _inspector.dispose();
     _signatureController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  // ✅ CLEAR ALL FIELDS FUNCTION
+  void _clearAllFields() {
+    _owner.clear();
+    _inspector.clear();
+
+    setState(() {
+      _selectedDate = DateTime.now();
+      _selectedTime = TimeOfDay.now();
+      _meatType = "Beef";
+    });
+
+    _signatureController.clear();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    final Uint8List fakeSignature = Uint8List.fromList([
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+      0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0xF3, 0xFF,
+      0x61, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+      0x54, 0x78, 0x9C, 0x63, 0xF8, 0xFF, 0xFF, 0x3F,
+      0x00, 0x05, 0xFE, 0x02, 0xFE, 0xA7, 0xCB, 0xD2,
+      0xA1, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
+      0x44, 0xAE, 0x42, 0x60, 0x82
+    ]);
+
+    _savedEntries.addAll([
+      {
+        "date": DateTime.now().subtract(const Duration(days: 1)),
+        "time": "10:30 AM",
+        "owner": "Muhammad Ali",
+        "meatType": "Beef",
+        "inspector": "Dr. Ahmed",
+        "signature": fakeSignature,
+        "createdAt": DateTime.now().subtract(const Duration(days: 1, hours: 2)),
+      },
+      {
+        "date": DateTime.now().subtract(const Duration(days: 2)),
+        "time": "03:45 PM",
+        "owner": "Zainab Farm",
+        "meatType": "Goat",
+        "inspector": "Inspector Bilal",
+        "signature": fakeSignature,
+        "createdAt": DateTime.now().subtract(const Duration(days: 2, hours: 3)),
+      },
+      {
+        "date": DateTime.now().subtract(const Duration(days: 3)),
+        "time": "09:10 AM",
+        "owner": "Al-Madina Traders",
+        "meatType": "Lamb",
+        "inspector": "Dr. Sana",
+        "signature": fakeSignature,
+        "createdAt": DateTime.now().subtract(const Duration(days: 3, hours: 1)),
+      },
+    ]);
   }
 
   Future<void> _pickDate() async {
@@ -57,18 +119,21 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
   }
 
   Future<void> _pickTime() async {
-    final t = await showTimePicker(context: context, initialTime: _selectedTime);
+    final t = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+    );
     if (t != null) setState(() => _selectedTime = t);
   }
 
-  // Save locally (in-memory) and simulate autosync
   Future<void> _saveEntry({bool autoSync = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
-    // get signature bytes
     final Uint8List? signatureBytes = await _signatureController.toPngBytes();
     if (signatureBytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please provide inspector signature.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please provide inspector signature.")),
+      );
       return;
     }
 
@@ -84,99 +149,135 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
 
     setState(() => _savedEntries.add(entry));
 
-    if (autoSync) {
-      // simulate sync
-      await Future.delayed(const Duration(seconds: 1));
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Auto-synced to server (simulated).")));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Saved locally.")));
-    }
-
-    // optional: clear form (but keep signature to show)
-    // _owner.clear(); _inspector.clear(); _signatureController.clear();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(autoSync ? "Auto-synced (simulated)." : "Record saved."),
+      ),
+    );
   }
 
-  // Export a single entry to PDF and open print/save dialog
-  Future<void> _exportEntryToPdf(Map<String, dynamic> entry) async {
+  Future<Uint8List> _generatePdf(Map<String, dynamic> entry) async {
     final pdf = pw.Document();
-    final sigBytes = entry['signature'] as Uint8List;
+    final Uint8List sigBytes = entry["signature"];
 
     pdf.addPage(
       pw.Page(
-        build: (pw.Context ctx) => pw.Container(
-          padding: const pw.EdgeInsets.all(18),
+        build: (pw.Context context) => pw.Container(
+          padding: const pw.EdgeInsets.all(20),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text("Ante Mortem Record Form", style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 10),
-              pw.Text("Date: ${DateFormat.yMMMd().format(entry['date'] as DateTime)}"),
+              pw.Text(
+                "Ante Mortem Report",
+                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text("Date: ${DateFormat.yMMMd().format(entry['date'])}"),
               pw.Text("Time: ${entry['time']}"),
               pw.Text("Owner Name: ${entry['owner']}"),
               pw.Text("Meat Type: ${entry['meatType']}"),
               pw.Text("Inspector Name: ${entry['inspector']}"),
-              pw.SizedBox(height: 16),
+              pw.SizedBox(height: 20),
               pw.Text("Inspector Signature:"),
               pw.SizedBox(height: 8),
-              pw.Image(pw.MemoryImage(sigBytes), width: 200, height: 100),
-              pw.SizedBox(height: 18),
-              pw.Text("Recorded At: ${DateFormat.yMd().add_jm().format(entry['createdAt'] as DateTime)}"),
+              pw.Image(pw.MemoryImage(sigBytes), width: 200, height: 80),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                "Recorded At: ${DateFormat.yMd().add_jm().format(entry['createdAt'])}",
+              ),
             ],
           ),
         ),
       ),
     );
 
-    final pdfBytes = await pdf.save();
-
-    // show print/save/share dialog
-    await Printing.layoutPdf(onLayout: (format) => pdfBytes);
+    return pdf.save();
   }
 
-  // UI helper to show saved entries list
-  Widget _buildSavedEntryCard(Map<String, dynamic> e, int idx) {
-    final dt = e['date'] as DateTime;
-    final time = e['time'] as String;
+  void _showPdfOptions(Map<String, dynamic> entry) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          child: AlertDialog(
+            title: const Text("Choose Action"),
+            content: const Text("What do you want to do with PDF?"),
+            actions: [
+              TextButton(
+                child: const Text("Download PDF"),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final bytes = await _generatePdf(entry);
+                  await Printing.sharePdf(
+                    bytes: bytes,
+                    filename:
+                    "AnteMortem_${DateTime.now().millisecondsSinceEpoch}.pdf",
+                  );
+                },
+              ),
+              TextButton(
+                child: const Text("Print PDF"),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final bytes = await _generatePdf(entry);
+                  await Printing.layoutPdf(onLayout: (_) => bytes);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSavedEntryCard(Map<String, dynamic> entry, int index) {
     return Container(
+      padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
+        border: Border.all(color: gold),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: gold, width: 1.3),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text("${DateFormat.yMMMd().format(dt)} • $time", style: TextStyle(fontWeight: FontWeight.bold, color: navy)),
-              const SizedBox(height: 6),
-              Text("Owner: ${e['owner']}"),
-              Text("Meat: ${e['meatType']}"),
-              Text("Inspector: ${e['inspector']}"),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${DateFormat.yMMMd().format(entry["date"])} • ${entry['time']}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: navy,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text("Owner: ${entry['owner']}"),
+                Text("Meat: ${entry['meatType']}"),
+                Text("Inspector: ${entry['inspector']}"),
+              ],
+            ),
           ),
-          Column(children: [
-            IconButton(
-              onPressed: () => _exportEntryToPdf(e),
-              icon: Icon(Icons.picture_as_pdf, color: navy),
-              tooltip: "Export to PDF",
-            ),
-            IconButton(
-              onPressed: () {
-                // simple delete
-                setState(() => _savedEntries.removeAt(idx));
-              },
-              icon: Icon(Icons.delete_forever, color: Colors.red),
-              tooltip: "Delete",
-            ),
-          ]),
+          Column(
+            children: [
+              IconButton(
+                icon: Icon(Icons.picture_as_pdf, color: navy),
+                onPressed: () => _showPdfOptions(entry),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => setState(() => _savedEntries.removeAt(index)),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  // Build the form UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -185,177 +286,206 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
         backgroundColor: background,
         elevation: 0,
         centerTitle: true,
-        title: Text("Ante Mortem Form", style: TextStyle(color: navy, fontWeight: FontWeight.bold)),
-        iconTheme: IconThemeData(color: navy),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Form card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: gold, width: 1.4),
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      // Date & time row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text("Date"),
-                              subtitle: Text(DateFormat.yMMMd().format(_selectedDate)),
-                              trailing: IconButton(
-                                icon: Icon(Icons.calendar_month, color: navy),
-                                onPressed: _pickDate,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text("Time"),
-                              subtitle: Text(_selectedTime.format(context)),
-                              trailing: IconButton(
-                                icon: Icon(Icons.access_time, color: navy),
-                                onPressed: _pickTime,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      // Owner
-                      TextFormField(
-                        controller: _owner,
-                        decoration: InputDecoration(
-                          labelText: "Owner name",
-                          labelStyle: TextStyle(color: navy),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: gold, width: 2)),
-                        ),
-                        validator: (v) => (v == null || v.trim().isEmpty) ? "Please enter owner name" : null,
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Meat type dropdown
-                      DropdownButtonFormField<String>(
-                        value: _meatType,
-                        decoration: InputDecoration(
-                          labelText: "Meat type",
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: gold, width: 2)),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: "Beef", child: Text("Beef")),
-                          DropdownMenuItem(value: "Lamb", child: Text("Lamb")),
-                          DropdownMenuItem(value: "Goat", child: Text("Goat")),
-                        ],
-                        onChanged: (v) => setState(() => _meatType = v ?? "Beef"),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Inspector name
-                      TextFormField(
-                        controller: _inspector,
-                        decoration: InputDecoration(
-                          labelText: "Inspector name",
-                          labelStyle: TextStyle(color: navy),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: gold, width: 2)),
-                        ),
-                        validator: (v) => (v == null || v.trim().isEmpty) ? "Please enter inspector name" : null,
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      // Signature pad
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Inspector signature (draw below)"),
-                          const SizedBox(height: 8),
-                          Container(
-                            height: 150,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: navy.withOpacity(0.3)),
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.grey[50],
-                            ),
-                            child: Signature(
-                              controller: _signatureController,
-                              backgroundColor: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: () => _signatureController.clear(),
-                                icon: const Icon(Icons.clear),
-                                label: const Text("Clear"),
-                                style: ElevatedButton.styleFrom(backgroundColor: gold, foregroundColor: Colors.black),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                onPressed: () async {
-                                  await _saveEntry(autoSync: false);
-                                },
-                                icon: const Icon(Icons.save),
-                                label: const Text("Save"),
-                                style: ElevatedButton.styleFrom(backgroundColor: navy),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                onPressed: () async {
-                                  await _saveEntry(autoSync: true);
-                                },
-                                icon: const Icon(Icons.sync),
-                                label: const Text("Save & Sync"),
-                                style: ElevatedButton.styleFrom(backgroundColor: gold, foregroundColor: Colors.black),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // Saved entries list
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Saved Records", style: TextStyle(fontWeight: FontWeight.bold, color: navy)),
-              ),
-              const SizedBox(height: 8),
-
-              if (_savedEntries.isEmpty)
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: gold)),
-                  child: const Text("No records yet."),
-                )
-              else
-                Column(
-                  children: List.generate(_savedEntries.length, (i) => _buildSavedEntryCard(_savedEntries[i], i)),
-                ),
-            ],
+        title: Text(
+          "Ante Mortem Report",
+          style: TextStyle(
+            color: navy,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+        iconTheme: IconThemeData(color: navy),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: gold),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pickDate,
+                            child: Row(
+                              children: [
+                                Icon(Icons.calendar_month, color: navy),
+                                const SizedBox(width: 10),
+
+                                const Text(
+                                  "Date : ",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+
+                                Text(DateFormat.yMMMd().format(_selectedDate)),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pickTime,
+                            child: Row(
+                              children: [
+                                Icon(Icons.access_time, color: navy),
+                                const SizedBox(width: 10),
+
+                                const Text(
+                                  "Time : ",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+
+                                Text(_selectedTime.format(context)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    TextFormField(
+                      controller: _owner,
+                      decoration: const InputDecoration(
+                        labelText: "Owner Name",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) => v!.isEmpty ? "Enter owner name" : null,
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    DropdownButtonFormField(
+                      value: _meatType,
+                      items: const [
+                        DropdownMenuItem(value: "Beef", child: Text("Beef")),
+                        DropdownMenuItem(value: "Lamb", child: Text("Lamb")),
+                        DropdownMenuItem(value: "Goat", child: Text("Goat")),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: "Meat Type",
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (v) => setState(() => _meatType = v!),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    TextFormField(
+                      controller: _inspector,
+                      decoration: const InputDecoration(
+                        labelText: "Inspector Name",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) => v!.isEmpty ? "Enter inspector name" : null,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text("Inspector Signature:"),
+                    ),
+                    const SizedBox(height: 8),
+
+                    Container(
+                      height: 150,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: navy),
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.white,
+                      ),
+                      child: Signature(
+                        controller: _signatureController,
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: gold,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: _clearAllFields,
+                          child: const Text("Clear"),
+                        ),
+                        const SizedBox(width: 10),
+
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: gold,
+                              foregroundColor: Colors.black),
+                          onPressed: () => _saveEntry(autoSync: false),
+                          child: const Text("Save"),
+                        ),
+                        const SizedBox(width: 10),
+
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: gold,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: () => _saveEntry(autoSync: true),
+                          child: const Text("Save & Sync"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Saved Records",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: navy,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            _savedEntries.isEmpty
+                ? Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: gold),
+              ),
+              child: const Text("No records added yet."),
+            )
+                : Column(
+              children: List.generate(
+                _savedEntries.length,
+                    (i) => _buildSavedEntryCard(_savedEntries[i], i),
+              ),
+            ),
+          ],
         ),
       ),
     );
