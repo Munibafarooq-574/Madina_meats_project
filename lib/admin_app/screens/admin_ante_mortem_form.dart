@@ -268,38 +268,59 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
       context: context,
       barrierDismissible: true,
       builder: (context) {
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          child: AlertDialog(
-            title: const Text("Choose Action"),
-            content: const Text("What do you want to do with PDF?"),
-            actions: [
-              TextButton(
-                child: const Text("Download PDF"),
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final bytes = await _generatePdf(entry);
-                  await Printing.sharePdf(
-                    bytes: bytes,
-                    filename:
-                    "AnteMortem_${DateTime.now().millisecondsSinceEpoch}.pdf",
-                  );
-                },
+        return AlertDialog(
+          titlePadding: EdgeInsets.zero,
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+          actionsPadding: const EdgeInsets.only(right: 10, bottom: 10),
+
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 16, top: 12, bottom: 12),
+                child: Text(
+                  "Choose Action",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              TextButton(
-                child: const Text("Print PDF"),
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final bytes = await _generatePdf(entry);
-                  await Printing.layoutPdf(onLayout: (_) => bytes);
-                },
+
+
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
+
+          content: const Text("What do you want to do with the PDF?"),
+
+          actions: [
+            TextButton(
+              child: const Text("Download PDF"),
+              onPressed: () async {
+                Navigator.pop(context);
+                final bytes = await _generatePdf(entry);
+                await Printing.sharePdf(
+                  bytes: bytes,
+                  filename:
+                  "AnteMortem_${DateTime.now().millisecondsSinceEpoch}.pdf",
+                );
+              },
+            ),
+            TextButton(
+              child: const Text("Print PDF"),
+              onPressed: () async {
+                Navigator.pop(context);
+                final bytes = await _generatePdf(entry);
+                await Printing.layoutPdf(onLayout: (_) => bytes);
+              },
+            ),
+          ],
         );
       },
     );
   }
+
 
 
   Widget _buildSavedEntryCard(Map<String, dynamic> entry, int index) {

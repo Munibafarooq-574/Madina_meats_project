@@ -22,12 +22,25 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   final Color navy = const Color(0xFF2C3E50);
   final Color gold = const Color(0xFFD6C28F);
   final Color background = const Color(0xFFF4EFE6);
+  final TextEditingController beefCtrl = TextEditingController();
+  final TextEditingController lambCtrl = TextEditingController();
+  final TextEditingController goatCtrl = TextEditingController();
+  final TextEditingController customerNameCtrl = TextEditingController();
+  final TextEditingController driverNameCtrl = TextEditingController();
+  final TextEditingController addressCtrl = TextEditingController();
+  final TextEditingController notesCtrl = TextEditingController();
 
+  String selectedDriverId = "";
+  DateTime? selectedDate;
+  TimeOfDay? selectedTime;
+
+  final SignatureController sigController = SignatureController();
   // Dummy sample customers and drivers (you can replace with your real data)
   final List<Map<String, String>> customers = [
     {"id": "CU001", "name": "Ali Raza", "address": "Lahore", "phone": "0300-1112223"},
     {"id": "CU002", "name": "Muniba", "address": "Karachi", "phone": "0311-1234567"},
   ];
+
 
   final List<Map<String, String>> drivers = [
     {"id": "DR001", "name": "Ahmed"},
@@ -38,8 +51,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   final List<Map<String, dynamic>> orders = [
     {
       "orderId": "ORD-1001",
-      "itemType": "Beef",
-      "quantity": 5,
+      "meatType": {
+        "Beef": "5",
+        "Lamb": "",
+        "Goat": "",
+      },
       "notes": "Keep frozen",
       "deliveryDate": DateTime.now().add(const Duration(hours: 5)),
       "customerId": "CU001",
@@ -53,8 +69,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     },
     {
       "orderId": "ORD-1002",
-      "itemType": "Lamb",
-      "quantity": 3,
+      "meatType": {
+        "Beef": "",
+        "Lamb": "3",
+        "Goat": "",
+      },
       "notes": "Urgent delivery",
       "deliveryDate": DateTime.now().add(const Duration(hours: 8)),
       "customerId": "CU002",
@@ -68,8 +87,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     },
     {
       "orderId": "ORD-1003",
-      "itemType": "Goat",
-      "quantity": 2,
+      "meatType": {
+        "Beef": "3",
+        "Lamb": "",
+        "Goat": "2",
+      },
       "notes": "",
       "deliveryDate": DateTime.now().add(const Duration(days: 1)),
       "customerId": "CU001",
@@ -80,15 +102,62 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
       "status": "Delivered",
       "createdAt": DateTime.now(),
       "customerSignature": null,
-    }
+    },
   ];
-
 
   // Search controller for orders (optional)
   final TextEditingController orderSearchCtrl = TextEditingController();
 
+  @override
+  void dispose() {
+    beefCtrl.dispose();
+    lambCtrl.dispose();
+    goatCtrl.dispose();
+    super.dispose();
+  }
+  String _formatMeat(Map meatMap) {
+    List<String> items = [];
+
+    meatMap.forEach((type, qty) {
+      if (qty != null && qty.toString().trim().isNotEmpty) {
+        items.add("$type: $qty");
+      }
+    });
+
+    if (items.isEmpty) return "None";
+
+    return items.join(", ");
+  }
+
+  Widget _buildMeatRow(String label, TextEditingController controller) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          flex: 3,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: "Quantity",
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ---------- Helper: Order statuses ----------
   final List<String> statuses = ["Pending", "Assigned", "In Transit", "Delivered", "Cancelled"];
+
 
   // ---------- UI: Main ----------
   @override
@@ -219,7 +288,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
             children: [
               Expanded(
                 child: Text(
-                  "${o['orderId']} • ${o['itemType']} x${o['quantity']}",
+                  "${o['orderId']} • ${_formatMeat(o['meatType'])}",
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: navy),
                 ),
               ),
@@ -403,55 +472,56 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                       const SizedBox(height: 8),
 
                       // customer selector
-                      DropdownButtonFormField<String>(
-                        value: selectedCustomerId,
-                        decoration: InputDecoration(labelText: "Customer", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                        items: customers
-                            .map((c) => DropdownMenuItem(value: c['id'], child: Text("${c['name']} (${c['id']})")))
-                            .toList(),
-                        onChanged: (v) => setStateDialog(() {
-                          selectedCustomerId = v!;
-                          // update address to selected customer default
-                          final cust = customers.firstWhere((c) => c['id'] == selectedCustomerId);
-                          addressCtrl.text = cust['address']!;
-                        }),
+                      TextFormField(
+                        controller: customerNameCtrl,
+                        decoration: InputDecoration(
+                          labelText: "Customer Name",
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
                       ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: background,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: gold, width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Meat Type & Quantity",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: navy,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            _buildMeatRow("Beef", beefCtrl),
+                            const SizedBox(height: 10),
+
+                            _buildMeatRow("Lamb", lambCtrl),
+                            const SizedBox(height: 10),
+
+                            _buildMeatRow("Goat", goatCtrl),
+                          ],
+                        ),
+                      ),
+
                       const SizedBox(height: 10),
 
-                      // item type & qty
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: itemType,
-                              decoration: InputDecoration(labelText: "Item type", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                              items: const [
-                                DropdownMenuItem(value: "Beef", child: Text("Beef")),
-                                DropdownMenuItem(value: "Lamb", child: Text("Lamb")),
-                                DropdownMenuItem(value: "Goat", child: Text("Goat")),
-                              ],
-                              onChanged: (v) => setStateDialog(() => itemType = v ?? "Beef"),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: qtyCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(labelText: "Quantity", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                            ),
-                          ),
-                        ],
+                      // driver
+                      TextFormField(
+                        controller: driverNameCtrl,
+                        decoration: InputDecoration(
+                          labelText: "Driver Name",
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
                       ),
-                      const SizedBox(height: 10),
 
-                      // driver dropdown
-                      DropdownButtonFormField<String>(
-                        value: selectedDriverId.isEmpty ? null : selectedDriverId,
-                        decoration: InputDecoration(labelText: "Assign Driver (optional)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
-                        items: drivers.map((d) => DropdownMenuItem(value: d['id'], child: Text("${d['name']} (${d['id']})"))).toList(),
-                        onChanged: (v) => setStateDialog(() => selectedDriverId = v ?? ''),
-                      ),
                       const SizedBox(height: 10),
 
                       // notes
@@ -538,64 +608,172 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                       // save
                       Row(
                         children: [
+                          // ================= CREATE / SAVE BUTTON =================
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: gold, foregroundColor: Colors.black),
-                            onPressed: formValid()
-                                ? () async {
-                              // build order object
-                              final combined = combinedDate();
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD6C28F), // ALWAYS ENABLE COLOR
+                              foregroundColor: Colors.black,
+                            ),
+                            onPressed: () async {
+                              // ---- VALIDATION ----
+                              if (customerNameCtrl.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text("Customer name required")));
+                                return;
+                              }
+                              if (addressCtrl.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text("Address required")));
+                                return;
+                              }
+
+                              // DRIVER: accept either selectedDriverId (from a dropdown) OR typed driverNameCtrl
+                              if (selectedDriverId.isEmpty && driverNameCtrl.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text("Driver name required")));
+                                return;
+                              }
+
+                              // DELIVERY date/time check (combinedDate() always returns a DateTime here)
+                              final DateTime combined = combinedDate();
+                              if (combined == null) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text("Delivery date & time required")));
+                                return;
+                              }
+
+                              // ---- MEAT VALIDATION ----
+                              if (beefCtrl.text.trim().isEmpty &&
+                                  lambCtrl.text.trim().isEmpty &&
+                                  goatCtrl.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text("At least one meat quantity required")));
+                                return;
+                              }
+
+                              // ---- SIGNATURE REQUIRED ----
                               Uint8List? sigBytes;
                               if (sigController.isNotEmpty) {
                                 sigBytes = await sigController.toPngBytes();
                               }
-
-                              // if no signature and creation mode => block (shouldn't happen due to formValid)
-                              if (editOrder == null && (sigBytes == null || sigBytes.isEmpty)) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please capture signature")));
+                              if (sigBytes == null || sigBytes.isEmpty) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(const SnackBar(content: Text("Please capture customer signature")));
                                 return;
                               }
 
+                              // ================= CONFIRM SAVE =================
+                              final confirm = await showDialog(
+                                context: context,
+                                builder: (c) => AlertDialog(
+                                  title: const Text("Confirm"),
+                                  content: Text(editOrder == null
+                                      ? "Create this order?"
+                                      : "Save changes to this order?"),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No")),
+                                    TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes")),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm != true) return;
+
+                              // Determine driver fields to save:
+                              // if selectedDriverId exists then use it; otherwise save typed driver name and leave driverId empty.
+                              final savedDriverId = selectedDriverId.isNotEmpty ? selectedDriverId : "";
+                              final savedDriverName = driverNameCtrl.text.trim().isNotEmpty
+                                  ? driverNameCtrl.text.trim()
+                                  : (selectedDriverId.isNotEmpty
+                                  ? drivers.firstWhere((d) => d['id'] == selectedDriverId)['name']
+                                  : "");
+
+                              // ================= CREATE NEW ORDER =================
                               if (editOrder == null) {
                                 final id = "ORD-${DateTime.now().millisecondsSinceEpoch % 100000}";
+
                                 orders.add({
                                   "orderId": id,
-                                  "itemType": itemType,
-                                  "quantity": int.parse(qtyCtrl.text.trim()),
+                                  "meatType": {
+                                    "Beef": beefCtrl.text.trim(),
+                                    "Lamb": lambCtrl.text.trim(),
+                                    "Goat": goatCtrl.text.trim(),
+                                  },
                                   "notes": notesCtrl.text.trim(),
                                   "deliveryDate": combined,
                                   "customerId": selectedCustomerId,
-                                  "customerName": customers.firstWhere((c) => c['id'] == selectedCustomerId)['name'],
-                                  "address": addressCtrl.text.trim(),
-                                  "driverId": selectedDriverId,
-                                  "driverName": selectedDriverId.isEmpty ? null : drivers.firstWhere((d) => d['id'] == selectedDriverId)['name'],
-                                  "status": selectedDriverId.isEmpty ? "Pending" : "Assigned",
+                                  "customerName": customerNameCtrl.text.trim(),
+                                  "driverId": savedDriverId,
+                                  "driverName": savedDriverName,
+                                  "status": savedDriverId.isEmpty ? "Pending" : "Assigned",
                                   "createdAt": DateTime.now(),
                                   "customerSignature": sigBytes,
                                 });
-                              } else {
-                                // update
-                                editOrder['itemType'] = itemType;
-                                editOrder['quantity'] = int.parse(qtyCtrl.text.trim());
+                              }
+                              // ================= UPDATE ORDER =================
+                              else {
+                                editOrder['meatType'] = {
+                                  "Beef": beefCtrl.text.trim(),
+                                  "Lamb": lambCtrl.text.trim(),
+                                  "Goat": goatCtrl.text.trim(),
+                                };
                                 editOrder['notes'] = notesCtrl.text.trim();
                                 editOrder['deliveryDate'] = combined;
-                                editOrder['address'] = addressCtrl.text.trim();
-                                editOrder['driverId'] = selectedDriverId;
-                                editOrder['driverName'] = selectedDriverId.isEmpty ? null : drivers.firstWhere((d) => d['id'] == selectedDriverId)['name'];
-                                if (sigBytes != null) editOrder['customerSignature'] = sigBytes;
-                                if (editOrder['status'] == null) editOrder['status'] = "Pending";
+                                editOrder['driverId'] = savedDriverId;
+                                editOrder['driverName'] = savedDriverName;
+                                editOrder['customerSignature'] = sigBytes;
                               }
 
+                              // RESET
+                              beefCtrl.clear();
+                              lambCtrl.clear();
+                              goatCtrl.clear();
+                              notesCtrl.clear();
+                              addressCtrl.clear();
+                              customerNameCtrl.clear();
+                              driverNameCtrl.clear();
+                              sigController.clear();
+
                               setState(() {});
-                              sigController.dispose();
-                              Navigator.pop(context);
-                            }
-                                : null,
+                              Navigator.pop(context); // CLOSE DIALOG
+                            },
+
                             child: Text(editOrder == null ? "Create Order" : "Save Changes"),
                           ),
+
                           const SizedBox(width: 12),
+
+                          // ================= CANCEL BUTTON =================
                           OutlinedButton(
-                            onPressed: () {
-                              sigController.dispose();
+                            onPressed: () async {
+                              final confirm = await showDialog(
+                                context: context,
+                                builder: (c) => AlertDialog(
+                                  title: const Text("Cancel"),
+                                  content: const Text("Are you sure you want to cancel?"),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(c, false),
+                                        child: const Text("No")),
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(c, true),
+                                        child: const Text("Yes")),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm != true) return;
+
+                              // CLEAR FIELDS
+                              beefCtrl.clear();
+                              lambCtrl.clear();
+                              goatCtrl.clear();
+                              notesCtrl.clear();
+                              addressCtrl.clear();
+                              customerNameCtrl.clear();
+                              driverNameCtrl.clear();
+                              sigController.clear();
+
                               Navigator.pop(context);
                             },
                             child: const Text("Cancel"),
@@ -695,10 +873,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                   ),
                   const SizedBox(height: 8),
                   _invoiceRow("Customer", "${order['customerName']}"),
+                  _invoiceRow("Address", "${order['address']}"),
                   _invoiceRow("Driver", order['driverName'] ?? "Unassigned"),
-                  _invoiceRow("Item Type", order['itemType']),
-                  _invoiceRow("Quantity", "${order['quantity']}"),
+                  _invoiceRow("Meat", _formatMeat(order['meatType'])),
                   _invoiceRow("Delivery", DateFormat.yMMMd().add_jm().format(order['deliveryDate'])),
+
                   const SizedBox(height: 12),
                   Text("Notes", style: TextStyle(fontWeight: FontWeight.bold, color: navy)),
                   const SizedBox(height: 6),
@@ -775,15 +954,20 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                 pw.SizedBox(height: 10),
 
                 pw.Text("Customer: ${order['customerName']}"),
+                pw.Text("Address: ${order['address']}"),
                 pw.Text("Driver: ${order['driverName'] ?? 'Unassigned'}"),
-                pw.SizedBox(height: 8),
 
-                pw.Table.fromTextArray(
-                  headers: ["Item", "Quantity"],
-                  data: [
-                    [order['itemType'], "${order['quantity']}"],
-                  ],
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  "Meat Details",
+                  style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
                 ),
+                pw.SizedBox(height: 6),
+
+                pw.Text("Beef: ${order['meatType']?['Beef']?.toString().trim().isEmpty == true ? '0' : order['meatType']['Beef']}"),
+                pw.Text("Lamb: ${order['meatType']?['Lamb']?.toString().trim().isEmpty == true ? '0' : order['meatType']['Lamb']}"),
+                pw.Text("Goat: ${order['meatType']?['Goat']?.toString().trim().isEmpty == true ? '0' : order['meatType']['Goat']}"),
+
 
                 pw.SizedBox(height: 12),
                 pw.Text("Delivery: ${DateFormat.yMMMd().add_jm().format(order['deliveryDate'])}"),

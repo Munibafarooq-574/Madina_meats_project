@@ -1,6 +1,12 @@
 // lib/admin_reports_screen.dart
 import 'package:flutter/material.dart';
+import 'SRM_TAG_record.dart';
 import 'admin_ante_mortem_form.dart';
+import 'Equipment_Maintenance_Form.dart';
+import 'Pest_Control_Record.dart';
+import 'Shipping_Records_screen.dart';
+import 'pre_slaughter_operational_status_report.dart';
+import 'preventive_maintenance_screen.dart';
 
 class AdminReportsScreen extends StatelessWidget {
   const AdminReportsScreen({super.key});
@@ -8,6 +14,8 @@ class AdminReportsScreen extends StatelessWidget {
   final Color navy = const Color(0xFF344955);
   final Color gold = const Color(0xFFD6C28F);
   final Color background = const Color(0xFFF8F5E8);
+
+
 
   Widget _buildTile({
     required BuildContext context,
@@ -56,14 +64,14 @@ class AdminReportsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> reports = [
       {"title": "Ante Mortem Record Form", "icon": Icons.pets, "route": "ante"},
-      {"title": "Pre-Slaughter Operational Status Report", "icon": Icons.report, "route": "soon"},
-      {"title": "Equipment Maintenance Report", "icon": Icons.build_circle, "route": "soon"},
+      {"title": "Pre-Slaughter Operational Status Report", "icon": Icons.report,"route": "pre_slaughter"},
+      {"title": "Equipment Maintenance Report", "icon": Icons.build_circle, "route": "equipment"},
       {"title": "Sanitation/Temperature Tasklist", "icon": Icons.thermostat, "route": "soon"},
       {"title": "Pre Operational Checklist", "icon": Icons.checklist_rtl, "route": "soon"},
-      {"title": "Pest Control", "icon": Icons.bug_report, "route": "soon"},
-      {"title": "Shipping Records", "icon": Icons.local_shipping, "route": "soon"},
-      {"title": "Preventive Maintenance Schedule", "icon": Icons.schedule, "route": "soon"},
-      {"title": "SRT/Tag Record", "icon": Icons.label_important, "route": "soon"},
+      {"title": "Pest Control", "icon": Icons.bug_report, "route": "pest"},
+      {"title": "Shipping Records","icon": Icons.local_shipping,"route": "shipping"},
+      {"title": "Preventive Maintenance Schedule", "icon": Icons.schedule, "route": "preventive"},
+      {"title": "SRM/Tag Record", "icon": Icons.label_important, "route": "srm"},
     ];
 
     return Scaffold(
@@ -99,8 +107,41 @@ class AdminReportsScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AdminAnteMortemForm()),
+                  ); }else if (r["route"] == "pre_slaughter") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PreSlaughterStatusScreen()),
                   );
-                } else {
+
+                } else if (r["route"] == "equipment") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => EquipmentMaintenanceScreen()),
+                  );
+                }  else if (r["route"] == "srm") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SrmTagRecordScreen()),
+                  );
+                }else if (r["route"] == "pest") {           // <-- WORKING ROUTE
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PestControlScreen()),
+                  );
+                } else if (r["route"] == "shipping") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ShippingRecordScreen()),
+                  );
+                }
+                else if (r["route"] == "preventive") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (
+                        _) => const PreventiveMaintenanceScreen()),
+                  );
+                }
+                else {
                   _showComingSoon(context, r["title"]);
                 }
               },
