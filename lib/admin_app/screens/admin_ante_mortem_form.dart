@@ -21,6 +21,9 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
 
   final _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _beefQty = TextEditingController();
+  final TextEditingController _lambQty = TextEditingController();
+  final TextEditingController _goatQty = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
@@ -28,13 +31,23 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
   // TEXT FIELD CONTROLLERS
   final TextEditingController _owner = TextEditingController();
   final TextEditingController _inspector = TextEditingController();
-
-  String _meatType = "Beef";
-
   final SignatureController _signatureController = SignatureController(
     penStrokeWidth: 2,
     penColor: Colors.black,
   );
+  String _formatMeat(Map meatMap) {
+    List<String> items = [];
+
+    meatMap.forEach((type, qty) {
+      if (qty != null && qty.toString().trim().isNotEmpty) {
+        items.add("$type: $qty");
+      }
+    });
+
+    if (items.isEmpty) return "None";
+
+    return items.join(", ");
+  }
 
   final List<Map<String, dynamic>> _savedEntries = [];
 
@@ -44,6 +57,10 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
     _inspector.dispose();
     _signatureController.dispose();
     _scrollController.dispose();
+    _beefQty.dispose();
+    _lambQty.dispose();
+    _goatQty.dispose();
+
     super.dispose();
   }
 
@@ -55,7 +72,7 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
     setState(() {
       _selectedDate = DateTime.now();
       _selectedTime = TimeOfDay.now();
-      _meatType = "Beef";
+
     });
 
     _signatureController.clear();
@@ -82,30 +99,46 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
         "date": DateTime.now().subtract(const Duration(days: 1)),
         "time": "10:30 AM",
         "owner": "Muhammad Ali",
-        "meatType": "Beef",
+        "meatType": {
+          "Beef": "10",
+          "Lamb": "",
+          "Goat": ""
+        },
         "inspector": "Dr. Ahmed",
         "signature": fakeSignature,
-        "createdAt": DateTime.now().subtract(const Duration(days: 1, hours: 2)),
+        "createdAt":
+        DateTime.now().subtract(const Duration(days: 1, hours: 2)),
       },
       {
         "date": DateTime.now().subtract(const Duration(days: 2)),
         "time": "03:45 PM",
         "owner": "Zainab Farm",
-        "meatType": "Goat",
+        "meatType": {
+          "Beef": "",
+          "Lamb": "",
+          "Goat": "5"
+        },
         "inspector": "Inspector Bilal",
         "signature": fakeSignature,
-        "createdAt": DateTime.now().subtract(const Duration(days: 2, hours: 3)),
+        "createdAt":
+        DateTime.now().subtract(const Duration(days: 2, hours: 3)),
       },
       {
         "date": DateTime.now().subtract(const Duration(days: 3)),
         "time": "09:10 AM",
         "owner": "Al-Madina Traders",
-        "meatType": "Lamb",
+        "meatType": {
+          "Beef": "",
+          "Lamb": "3",
+          "Goat": ""
+        },
         "inspector": "Dr. Sana",
         "signature": fakeSignature,
-        "createdAt": DateTime.now().subtract(const Duration(days: 3, hours: 1)),
+        "createdAt":
+        DateTime.now().subtract(const Duration(days: 3, hours: 1)),
       },
     ]);
+
   }
 
   Future<void> _pickDate() async {
@@ -137,15 +170,22 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
       return;
     }
 
+    final Map<String, String> meatMap = {
+      "Beef": _beefQty.text.trim(),
+      "Lamb": _lambQty.text.trim(),
+      "Goat": _goatQty.text.trim(),
+    };
+
     final entry = {
       "date": _selectedDate,
       "time": _selectedTime.format(context),
       "owner": _owner.text.trim(),
-      "meatType": _meatType,
+      "meatType": meatMap,
       "inspector": _inspector.text.trim(),
       "signature": signatureBytes,
       "createdAt": DateTime.now(),
     };
+
 
     setState(() => _savedEntries.add(entry));
 
@@ -175,7 +215,10 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
               pw.Text("Date: ${DateFormat.yMMMd().format(entry['date'])}"),
               pw.Text("Time: ${entry['time']}"),
               pw.Text("Owner Name: ${entry['owner']}"),
-              pw.Text("Meat Type: ${entry['meatType']}"),
+              pw.Text(
+                "Meat Type: ${_formatMeat(entry['meatType'])}",
+              ),
+
               pw.Text("Inspector Name: ${entry['inspector']}"),
               pw.SizedBox(height: 20),
               pw.Text("Inspector Signature:"),
@@ -192,6 +235,32 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
     );
 
     return pdf.save();
+  }
+
+  Widget _buildMeatRow(String label, TextEditingController controller) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          flex: 3,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: "Quantity",
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void _showPdfOptions(Map<String, dynamic> entry) {
@@ -232,6 +301,7 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
     );
   }
 
+
   Widget _buildSavedEntryCard(Map<String, dynamic> entry, int index) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -256,7 +326,7 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
                 ),
                 const SizedBox(height: 6),
                 Text("Owner: ${entry['owner']}"),
-                Text("Meat: ${entry['meatType']}"),
+                Text("Meat: ${_formatMeat(entry['meatType'])}"),
                 Text("Inspector: ${entry['inspector']}"),
               ],
             ),
@@ -370,19 +440,38 @@ class _AdminAnteMortemFormState extends State<AdminAnteMortemForm> {
 
                     const SizedBox(height: 14),
 
-                    DropdownButtonFormField(
-                      value: _meatType,
-                      items: const [
-                        DropdownMenuItem(value: "Beef", child: Text("Beef")),
-                        DropdownMenuItem(value: "Lamb", child: Text("Lamb")),
-                        DropdownMenuItem(value: "Goat", child: Text("Goat")),
-                      ],
-                      decoration: const InputDecoration(
-                        labelText: "Meat Type",
-                        border: OutlineInputBorder(),
+                    // --------------- CUSTOM MEAT TYPE WITH QUANTITY ---------------
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: gold, width: 1),
                       ),
-                      onChanged: (v) => setState(() => _meatType = v!),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Meat Type & Quantity",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: navy,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          _buildMeatRow("Beef", _beefQty),
+                          const SizedBox(height: 10),
+
+                          _buildMeatRow("Lamb", _lambQty),
+                          const SizedBox(height: 10),
+
+                          _buildMeatRow("Goat", _goatQty),
+                        ],
+                      ),
                     ),
+
 
                     const SizedBox(height: 14),
 

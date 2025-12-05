@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'admin_app/screens/admin_login_screen.dart';
 import 'driver_app/screens/driver_login_screen.dart';
 import 'customer_app/screens/customer_login_screen.dart';
-import ' core/splash/common_splash.dart';
+import 'core/splash/common_splash.dart';
 import 'screens/get_started_screen.dart';
 import 'screens/select_app_screen.dart';
 void main() {

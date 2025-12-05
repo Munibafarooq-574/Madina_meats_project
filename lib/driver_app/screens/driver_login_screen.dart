@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:madina_meats/driver_app/screens/driver_home_screens.dart';
 
 class DriverLoginScreen extends StatefulWidget {
   const DriverLoginScreen({super.key});
@@ -182,9 +183,16 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                                   ? null
                                   : () {
                                 if (_formKey.currentState!.validate()) {
-                                  print("DRIVER LOGIN PRESSED");
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => DriverDashboard(),
+                                    ),
+                                  );
+
                                 }
                               },
+
 
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: gold,

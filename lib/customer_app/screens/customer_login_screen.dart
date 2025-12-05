@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:madina_meats/customer_app/screens/customer_home_screen.dart';
 
 class CustomerLoginScreen extends StatefulWidget {
   const CustomerLoginScreen({super.key});
@@ -183,14 +184,18 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                                   ? null
                                   : () {
                                 if (_formKey.currentState!.validate()) {
-                                  print("CUSTOMER LOGIN PRESSED");
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CustomerHomeScreen(),
+                                    ),
+                                  );
                                 }
                               },
 
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: gold,
-                                padding:
-                                const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   side: BorderSide(color: navy, width: 2),
@@ -198,13 +203,11 @@ class _CustomerLoginScreenState extends State<CustomerLoginScreen> {
                                 elevation: 10,
                                 shadowColor: extraGold,
                               ).copyWith(
-                                overlayColor:
-                                MaterialStateProperty.all(navy),
+                                overlayColor: MaterialStateProperty.all(navy),
                               ),
 
                               child: _loading
-                                  ? const CircularProgressIndicator(
-                                  color: Colors.white)
+                                  ? const CircularProgressIndicator(color: Colors.white)
                                   : const Text(
                                 "Login",
                                 style: TextStyle(

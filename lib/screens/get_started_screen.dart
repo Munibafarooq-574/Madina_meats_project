@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:madina_meats/ core/constants/app_images.dart';
+import 'package:madina_meats/core/constants/app_images.dart';
 
 class GetStartedScreen extends StatelessWidget {
   const GetStartedScreen({super.key});

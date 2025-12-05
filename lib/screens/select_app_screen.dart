@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:madina_meats/ core/constants/app_images.dart';
+import 'package:madina_meats/core/constants/app_images.dart';
 
 
 class SelectAppScreen extends StatelessWidget {
