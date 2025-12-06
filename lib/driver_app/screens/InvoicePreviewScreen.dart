@@ -109,12 +109,20 @@ class InvoicePreviewScreen extends StatelessWidget {
                     /// SAVE INVOICE
                     ElevatedButton(
                       onPressed: () {
+                        // Mark order completed
+                        order["status"] = "completed";
+
+// Add to history list
                         customerHistoryOrders.add(order);
 
+// Return the updated order to Driver Dashboard
+                        Navigator.pop(context, order);
+
+// Confirmation
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("Invoice saved to history")),
+                          const SnackBar(content: Text("Invoice saved to history")),
                         );
+
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD6C28F),

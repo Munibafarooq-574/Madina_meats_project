@@ -5,13 +5,13 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:madina_meats/driver_app/screens/InvoicePreviewScreen.dart';
+import 'package:madina_meats/driver_app/screens/driver_login_screen.dart';
 import 'package:signature/signature.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:madina_meats/core/global/invoice_history.dart';
-/// DRIVER DASHBOARD (Admin-style flip tiles, Navy + Gold theme)
-/// Single-file demo with dummy orders, signature capture, image upload,
-/// complete flow and invoice preview. No backend.
+
+
 
 class DriverDashboard extends StatefulWidget {
   const DriverDashboard({super.key});
@@ -151,7 +151,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
           (o['customer'] as String).toLowerCase().contains(q) ||
           (o['address'] as String).toLowerCase().contains(q) ||
           (o['type'] as String).toLowerCase().contains(q)
-          ) {
+      ) {
         results.add(o);
       }
     }
@@ -267,7 +267,8 @@ class _DriverDashboardState extends State<DriverDashboard> {
   Widget build(BuildContext context) {
     final results = filteredResults;
 
-    return Scaffold(
+    return
+      Scaffold(
       backgroundColor: background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
@@ -278,7 +279,12 @@ class _DriverDashboardState extends State<DriverDashboard> {
               automaticallyImplyLeading: false,
               leading: IconButton(
                 icon: Icon(Icons.arrow_back_ios_new, color: navy, size: 26),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => DriverLoginScreen()),
+                  );
+                },
               ),
               backgroundColor: Colors.white.withOpacity(0.36),
               elevation: 0,
@@ -377,8 +383,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
                         ),
 
                       ),
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        // Await the order detail screen result; if a map is returned it means the order was updated/completed
+                        final updatedOrder = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => DriverOrderDetailScreen(
@@ -389,6 +396,18 @@ class _DriverDashboardState extends State<DriverDashboard> {
                             ),
                           ),
                         );
+
+                        if (updatedOrder != null && updatedOrder is Map) {
+                          final index = orders.indexWhere((e) => e["id"] == updatedOrder["id"]);
+                          if (index != -1) {
+                            setState(() {
+                              orders[index] = Map<String, dynamic>.from(updatedOrder);
+                            });
+                          }
+                        } else {
+                          // general refresh in case the callback updated state
+                          setState(() {});
+                        }
                       },
                     );
                   },
@@ -568,8 +587,9 @@ class OrdersListScreen extends StatelessWidget {
                     ),
                   ),
                 ).then((result) {
-                  if (result == true) {
-                    onUpdate(); // refresh after update
+                  // if result is non-null then the detail screen returned an updated order
+                  if (result != null) {
+                    onUpdate();
                   }
                 });
               },
@@ -622,6 +642,12 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
     }
   }
 
+  /// COMPLETE DELIVERY FLOW:
+  /// 1) Capture signature (required) and optional image
+  /// 2) Prepare a temporary order object (with signature/image but NOT marked completed yet)
+  /// 3) Open InvoicePreviewScreen and await result
+  /// 4) If invoice saved (InvoicePreviewScreen returns true or returns a Map),
+  ///    then mark order completed, save in history, notify parent, and return updated order.
   Future<void> completeDelivery() async {
     if (!signatureController.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -632,29 +658,65 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
 
     signatureBytes = await signatureController.toPngBytes();
 
-    widget.order["status"] = "completed";
-    widget.order["signature"] = signatureBytes;
-    widget.order["image"] = selectedImage;
-    widget.order["deliveredAt"] = DateTime.now();
-    widget.order["date"] =
-        DateFormat('dd MMM yyyy – hh:mm a').format(DateTime.now());
+    // prepare temporary order to pass to invoice screen (do not mark as completed yet)
+    final Map<String, dynamic> tempOrder = {
+      ...widget.order,
+      "signature": signatureBytes,
+      "image": selectedImage,
+      // keep original status until invoice is actually saved
+    };
 
-    // Save to customer app history
-    customerHistoryOrders.removeWhere((e) => e["id"] == widget.order["id"]);
-    customerHistoryOrders.add({...widget.order});
-
-    // ⭐ THIS IS THE IMPORTANT LINE
-    widget.onUpdate(widget.order);
-
-    setState(() {});
-
-    // Go to invoice
-    Navigator.pushReplacement(
+    // open invoice screen and wait for a result. We accept either:
+    // - true (boolean) meaning the invoice was saved, OR
+    // - a Map returned representing the saved order
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => InvoicePreviewScreen(order: widget.order),
+        builder: (_) => InvoicePreviewScreen(order: tempOrder),
       ),
     );
+
+    bool saved = false;
+    Map? returnedOrder;
+
+    if (result == true) {
+      saved = true;
+    } else if (result is Map) {
+      saved = true;
+      returnedOrder = result;
+    }
+
+    if (saved) {
+      // apply signature/image and mark completed
+      if (returnedOrder != null) {
+        // merge any changes from returnedOrder into our widget.order
+        widget.order.addAll(Map<String, dynamic>.from(returnedOrder));
+      } else {
+        widget.order["signature"] = signatureBytes;
+        widget.order["image"] = selectedImage;
+      }
+
+      widget.order["status"] = "completed";
+      widget.order["deliveredAt"] = DateTime.now();
+      widget.order["date"] =
+          DateFormat('dd MMM yyyy – hh:mm a').format(DateTime.now());
+
+      // update local customer history (remove any old instance and add updated)
+      customerHistoryOrders.removeWhere((e) => e["id"] == widget.order["id"]);
+      customerHistoryOrders.add({...widget.order});
+
+      // notify parent (dashboard / lists) about update
+      widget.onUpdate(widget.order);
+
+      // return updated order to callers (so lists/search can update)
+      Navigator.pop(context, widget.order);
+    } else {
+      // user returned without saving invoice — do not mark completed
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invoice not saved. Delivery still pending.")),
+      );
+      // stay on the detail screen so driver can retry
+    }
   }
 
 
@@ -820,16 +882,4 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
 
     );
   }
-}
-
-
-
-/// ----------------- ENTRY/MAIN -----------------
-/// You can launch this DriverDashboard from your app main (example below).
-/// If you want to run this file directly, use this main():
-void main() {
-  runApp(const MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: DriverDashboard(),
-  ));
 }
