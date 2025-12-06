@@ -7,6 +7,8 @@ import 'Pest_Control_Record.dart';
 import 'Shipping_Records_screen.dart';
 import 'pre_slaughter_operational_status_report.dart';
 import 'preventive_maintenance_screen.dart';
+import 'pre_operational_checklist_screen.dart';
+import 'sanitation_temperature_task_list_screen.dart';
 
 class AdminReportsScreen extends StatelessWidget {
   const AdminReportsScreen({super.key});
@@ -66,8 +68,8 @@ class AdminReportsScreen extends StatelessWidget {
       {"title": "Ante Mortem Record Form", "icon": Icons.pets, "route": "ante"},
       {"title": "Pre-Slaughter Operational Status Report", "icon": Icons.report,"route": "pre_slaughter"},
       {"title": "Equipment Maintenance Report", "icon": Icons.build_circle, "route": "equipment"},
-      {"title": "Sanitation/Temperature Tasklist", "icon": Icons.thermostat, "route": "soon"},
-      {"title": "Pre Operational Checklist", "icon": Icons.checklist_rtl, "route": "soon"},
+      {"title": "Sanitation/Temperature Tasklist", "icon": Icons.thermostat, "route": "sanitation"},
+      {"title": "Pre Operational Checklist", "icon": Icons.checklist_rtl, "route": "pre_op_checklist"},
       {"title": "Pest Control", "icon": Icons.bug_report, "route": "pest"},
       {"title": "Shipping Records","icon": Icons.local_shipping,"route": "shipping"},
       {"title": "Preventive Maintenance Schedule", "icon": Icons.schedule, "route": "preventive"},
@@ -133,12 +135,24 @@ class AdminReportsScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (_) => const ShippingRecordScreen()),
                   );
+                }else if (r["route"] == "sanitation") { // <-- NEW WORKING ROUTE
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (
+                        _) => const SanitationTemperatureTaskListScreen()),
+                  );
                 }
                 else if (r["route"] == "preventive") {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (
                         _) => const PreventiveMaintenanceScreen()),
+                  );
+                }
+                else if (r["route"] == "pre_op_checklist") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PreOperationalChecklistScreen()),
                   );
                 }
                 else {

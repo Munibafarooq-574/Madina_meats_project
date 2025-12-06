@@ -18,6 +18,9 @@ class _CustomerOngoingOrdersScreenState
 
   final TextEditingController searchController = TextEditingController();
 
+  // ----------------------------------------------------------------------
+  // 🔥 UPDATED DUMMY DATA WITH deliveryAddress + driverId
+  // ----------------------------------------------------------------------
   List<Map<String, dynamic>> orders = [
     {
       "id": "ORD-101",
@@ -25,6 +28,8 @@ class _CustomerOngoingOrdersScreenState
       "qty": "5 KG",
       "status": "Pending",
       "date": "11 Jan 2025 - 3:00 PM",
+      "deliveryAddress": "House #20, Street 5, Lahore",
+      "driverId": "DRV-001",
     },
     {
       "id": "ORD-102",
@@ -32,9 +37,12 @@ class _CustomerOngoingOrdersScreenState
       "qty": "2 KG",
       "status": "In Process",
       "date": "12 Jan 2025 - 6:30 PM",
+      "deliveryAddress": "Flat 10-B, Gulshan Block 4, Karachi",
+      "driverId": "DRV-002",
     },
   ];
 
+  // Search suggestions
   List<String> allSuggestions = [
     "ORD-101 • Beef",
     "ORD-102 • Goat",
@@ -75,6 +83,7 @@ class _CustomerOngoingOrdersScreenState
     }
   }
 
+  // FILTER FUNCTION
   void applyFilters() {
     setState(() {
       filteredOrders = orders.where((order) {
@@ -95,6 +104,7 @@ class _CustomerOngoingOrdersScreenState
     });
   }
 
+  // SEARCH FUNCTION
   void searchOrder(String query) {
     searchQuery = query;
     applyFilters();
@@ -152,6 +162,9 @@ class _CustomerOngoingOrdersScreenState
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                // -------------------------------------------------------------
+                // SEARCH + STATUS FILTER
+                // -------------------------------------------------------------
                 Row(
                   children: [
                     Expanded(
@@ -199,8 +212,8 @@ class _CustomerOngoingOrdersScreenState
                                         style: TextStyle(color: navy),
                                       ),
                                       onTap: () {
-                                        String id = suggestions[index]
-                                            .split(" • ")[0];
+                                        String id =
+                                        suggestions[index].split(" • ")[0];
                                         searchController.text = id;
                                         searchOrder(id);
                                         setState(() => suggestions = []);
@@ -236,8 +249,7 @@ class _CustomerOngoingOrdersScreenState
                           ].map((status) {
                             return DropdownMenuItem(
                               value: status,
-                              child:
-                              Text(status, style: TextStyle(color: navy)),
+                              child: Text(status, style: TextStyle(color: navy)),
                             );
                           }).toList(),
                           onChanged: (value) => filterByStatus(value!),
@@ -249,6 +261,9 @@ class _CustomerOngoingOrdersScreenState
 
                 const SizedBox(height: 20),
 
+                // -------------------------------------------------------------
+                // ORDER LIST
+                // -------------------------------------------------------------
                 Expanded(
                   child: ListView.separated(
                     itemCount: filteredOrders.length,

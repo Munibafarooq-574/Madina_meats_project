@@ -52,7 +52,7 @@ class CustomerOrderDetailsScreen extends StatelessWidget {
                         ? DateFormat('dd MMM yyyy – hh:mm a').format(order["deliveredAt"])
                         : "Pending",
                   ),
-                  _detail("Delivery Address", order["address"]),
+                  _detail("Delivery Address", order["deliveryAddress"] ?? "N/A"),
                   _detail("Driver ID", order["driverId"]),
                 ],
               ),

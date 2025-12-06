@@ -692,7 +692,7 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
         padding: const EdgeInsets.all(16),
 
         children: [
-
+          // BASIC INFO
           Text("Customer:", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
           Text(o['customer'], style: GoogleFonts.poppins()),
           const SizedBox(height: 10),
@@ -710,97 +710,90 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
               style: GoogleFonts.poppins()),
           const SizedBox(height: 20),
 
-          Text("Customer Signature:", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Container(
-            height: 160,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.black26),
-              borderRadius: BorderRadius.circular(8),
+          // -------------------------
+          //  STATUS-BASED UI FILTER
+          // -------------------------
+          if (o['status'] == "current" ||
+              o['status'] == "today" ||
+              o['status'] == "upcoming") ...[
+
+            // SIGNATURE
+            Text("Customer Signature:",
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              height: 160,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black26),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Signature(controller: signatureController),
             ),
-            child: Signature(controller: signatureController),
-          ),
-          TextButton(
-            onPressed: () => signatureController.clear(),
-            child: const Text("Clear Signature"),
-          ),
+            TextButton(
+              onPressed: () => signatureController.clear(),
+              child: const Text("Clear Signature"),
+            ),
 
-          const SizedBox(height: 18),
-          Text("Delivery Image (optional):",
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+            const SizedBox(height: 18),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () => pickImage(true),
-                icon: const Icon(Icons.camera_alt, color: Colors.black),
-                label: Text("Camera",
-                    style: GoogleFonts.poppins(color: Colors.black)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD6C28F),
+            // DELIVERY IMAGE
+            Text("Delivery Image (optional):",
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => pickImage(true),
+                  icon: const Icon(Icons.camera_alt, color: Colors.black),
+                  label: Text("Camera",
+                      style: GoogleFonts.poppins(color: Colors.black)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD6C28F),
+                  ),
                 ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () => pickImage(false),
-                icon: const Icon(Icons.photo, color: Colors.black),
-                label: Text("Gallery",
-                    style: GoogleFonts.poppins(color: Colors.black)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD6C28F),
+                ElevatedButton.icon(
+                  onPressed: () => pickImage(false),
+                  icon: const Icon(Icons.photo, color: Colors.black),
+                  label: Text("Gallery",
+                      style: GoogleFonts.poppins(color: Colors.black)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD6C28F),
+                  ),
                 ),
-              ),
+              ],
+            ),
+
+            if (selectedImage != null) ...[
+              const SizedBox(height: 12),
+              Image.memory(selectedImage!, height: 150),
             ],
-          ),
 
-          if (selectedImage != null) ...[
-            const SizedBox(height: 12),
-            Image.memory(selectedImage!, height: 150),
+            const SizedBox(height: 20),
+
+            // COMPLETE DELIVERY BUTTON
+            ElevatedButton(
+              onPressed: completeDelivery,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD6C28F),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                "Complete Delivery",
+                style: GoogleFonts.poppins(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ],
 
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () async {
-              if (!signatureController.isNotEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Please capture customer signature")),
-                );
-                return;
-              }
-
-              signatureBytes = await signatureController.toPngBytes();
-
-              widget.order["status"] = "completed";
-              widget.order["signature"] = signatureBytes;
-              widget.order["image"] = selectedImage;
-              widget.order["deliveredAt"] = DateTime.now();
-              widget.order["date"] =
-                  DateFormat('dd MMM yyyy – hh:mm a').format(DateTime.now());
-
-              // Save to customer history
-              customerHistoryOrders.removeWhere((e) => e["id"] == widget.order["id"]);
-              customerHistoryOrders.add({...widget.order});
-
-              // Return TRUE so list screen updates
-              Navigator.pop(context, true);
-            },
-
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD6C28F),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: Text(
-              "Complete Delivery",
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          if (o['status'] == 'completed')
+          // -------------------------
+          // SHOW INVOICE FOR COMPLETED
+          // -------------------------
+          if (o['status'] == 'completed') ...[
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -821,8 +814,10 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
                 ),
               ),
             ),
+          ],
         ],
       ),
+
     );
   }
 }

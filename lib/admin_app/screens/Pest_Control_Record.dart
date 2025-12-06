@@ -235,7 +235,7 @@ class _PestControlScreenState extends State<PestControlScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Pest Control 2025",
+          "Pest Control",
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Color(0xFF344955),
