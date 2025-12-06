@@ -112,13 +112,11 @@ class InvoicePreviewScreen extends StatelessWidget {
                         // Mark order completed
                         order["status"] = "completed";
 
-// Add to history list
                         customerHistoryOrders.add(order);
 
-// Return the updated order to Driver Dashboard
+
                         Navigator.pop(context, order);
 
-// Confirmation
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Invoice saved to history")),
                         );
