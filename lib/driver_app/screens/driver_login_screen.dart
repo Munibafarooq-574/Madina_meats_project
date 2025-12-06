@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:madina_meats/driver_app/screens/driver_home_screens.dart';
+import 'package:madina_meats/screens/select_app_screen.dart';
 
 class DriverLoginScreen extends StatefulWidget {
   const DriverLoginScreen({super.key});
@@ -47,7 +48,12 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new, color: navy, size: 26),
-          onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const SelectAppScreen()),
+              );
+            }
         ),
       ),
 

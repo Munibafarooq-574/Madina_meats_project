@@ -183,6 +183,234 @@ class _PreOperationalChecklistScreenState
     clearForm();
   }
 
+
+
+// record  view detail
+  void showRecordDetailsDialog(BuildContext context, Map<String, dynamic> record) {
+    final safe = record;
+
+    final corrective = safe["corrective"] as List<dynamic>? ?? [];
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: 500,
+            height: 650,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4EFFC),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ---------------- HEADER ----------------
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Record ID: ${safe['id'] ?? '-'}",
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  ],
+                ),
+
+                Text(
+                  "${safe['month'] ?? ''}  •  ${safe['time'] ?? ''}",
+                  style: const TextStyle(fontSize: 14),
+                ),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Month: ${safe['month'] ?? '-'}",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(width: 20),
+                    Text("Plant: ${safe['plant'] ?? '-'}",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+                Text("Initials: ${safe['initials'] ?? '-'}"),
+
+                const SizedBox(height: 20),
+
+                // ---------------- TABLE HEADER ----------------
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                  ),
+                  child: const Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Item",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          "Selected",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // ⭐ MAIN SCROLLABLE AREA ⭐
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ---------------- ITEM TABLE ----------------
+                        ...List.generate(items.length, (i) {
+                          final item = items[i];
+                          final isHeader = item["isHeader"] == true;
+
+                          if (isHeader) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Text(
+                                item["text"],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            );
+                          }
+
+                          String selected = "-";
+                          if ((safe["acceptable"] as Map)[i] == true) {
+                            selected = "✓ Acceptable";
+                          } else if ((safe["unacceptable"] as Map)[i] == true) {
+                            selected = "X Unacceptable";
+                          }
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                top: BorderSide(color: Colors.grey.shade300),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(child: Text(item["text"])),
+                                Expanded(child: Text(selected)),
+                              ],
+                            ),
+                          );
+                        }),
+
+                        const SizedBox(height: 25),
+
+                        // ---------------- CORRECTIVE ACTION SECTION ----------------
+                        const Text(
+                          "Corrective Action Log Sheet",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        if (corrective.isEmpty)
+                          const Text("No corrective actions recorded."),
+
+                        if (corrective.isNotEmpty)
+                          ...corrective.map((item) {
+                            return Container(
+                              width: double.infinity, // ⭐ Full width card
+                              padding: const EdgeInsets.all(16),
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildRow("Date:", item['date']),
+                                  _buildRow("Time:", item['time']),
+                                  _buildRow("Deviation:", item['deviation']),
+                                  _buildRow("Action:", item['action']),
+                                  _buildRow("Re-Inspection:", item['inspection']),
+                                  _buildRow("Initials:", item['initials']),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                Center(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "Close",
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+// ⭐ Helper widget for bold label + normal value
+  Widget _buildRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              value ?? "-",
+              softWrap: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
   // Update Record
   void updateRecord() {
     final index = savedRecords.indexWhere((e) => e["id"] == editingRecordId);
@@ -592,6 +820,7 @@ class _PreOperationalChecklistScreenState
                 DataColumn(label: Text("ID")),
                 DataColumn(label: Text("Month")),
                 DataColumn(label: Text("Time")),
+                DataColumn(label: Text("View")),
                 DataColumn(label: Text("Edit")),
                 DataColumn(label: Text("Delete")),
               ],
@@ -605,6 +834,15 @@ class _PreOperationalChecklistScreenState
                     DataCell(Text(rec["id"]?.toString() ?? "")),
                     DataCell(Text(rec["month"]?.toString() ?? "")),
                     DataCell(Text(rec["time"]?.toString() ?? "")),
+
+                    DataCell(
+                      ElevatedButton(
+                        onPressed: () {
+                          showRecordDetailsDialog(context, rec ?? {});
+                        },
+                        child: const Text("View"),
+                      ),
+                    ),
 
                     DataCell(
                       IconButton(
